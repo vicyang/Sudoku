@@ -176,7 +176,7 @@ int best ()
     register int min, best, posisi;
     register int head, this, maybe;
     Ijk *w;
-    min    = 10;
+    min    = 10;  //设一个最小量
     best   = OK;
     posisi = Head;
 
@@ -189,13 +189,12 @@ int best ()
         if (this == ERROR) return ERROR;
         maybe = Maybe[this][OK];  //maybe = 可能的数量
 
-        if (min > maybe) {
+        if ( maybe < min ) {
             posisi = head, best = this;
             if (maybe == BEST) break;
             min = maybe;
         }
     }
-    exit(0);
 
     Ijk dat = Dit[posisi];
     Dit[posisi] = Dit[Head];
