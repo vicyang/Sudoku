@@ -2,9 +2,6 @@
     作者：Rubyish
     日期: 2017-10
     http://bbs.chinaunix.net/forum.php?mod=viewthread&tid=4267389&page=3&authorid=25822983
-    
-    修改：vicyang
-    添加的函数：fill_one_possible_num
 */
 
 # include <stdio.h>
@@ -37,7 +34,7 @@ void load_games( struct game * games, char *filename  );
 int fill_one_possible_number ();
 void print_sudo_inline( Sdk sudo );
 
-int explore (Sdk);
+int explore (Sdk, int);
 void echo (Sdk);
 void play (Sdk);
 void init (void);
@@ -106,151 +103,6 @@ void init ()
     }
 }
 
-int fill_one_possible_number (Sdk sudo)
-{
-    static int r, c;
-    static int idx;
-    int mask;
-    int fill = 0;
-    Ijk *w;
-
-    int possible[10];
-    for (idx = Head; idx < Tail; idx++)
-    {
-        w = &Dit[idx];
-        //mask
-        mask = Horiz[w->h] | Verti[w->v] | Bloke[w->b];
-        if ( Maybe[mask][0] == 1 )
-        {
-            sudo[w->h][w->v] = Maybe[mask][1];
-            Horiz[w->h] |= 1 << sudo[w->h][w->v];
-            Verti[w->v] |= 1 << sudo[w->h][w->v];
-            Bloke[w->b] |= 1 << sudo[w->h][w->v];
-            //printf("Fill %d,%d  %d\n", w->h, w->v,  sudo[w->h][w->v]);
-            fill++;
-        }
-    }
-
-    //ROW
-    for (r = 0; r < 9; r++)
-    {
-        memset(possible, 0, sizeof(possible) );
-        for (c = 0; c < 9; c++)
-        {
-            if ( sudo[r][c] == 0 ) 
-            {
-                mask = Horiz[r] | Verti[c] | Bloke[Hover[r][c]];
-                for ( int e = 1; e <= Maybe[mask][0] ; e++)
-                {
-                    possible[ Maybe[mask][e] ]++;
-                }
-            }
-        }
-
-        for (c = 0; c < 9; c++)
-        {
-            if ( sudo[r][c] == 0 ) 
-            {
-                mask = Horiz[r] | Verti[c] | Bloke[Hover[r][c]];
-                for ( int e = 1; e <= Maybe[mask][0] ; e++)
-                {
-                    if ( possible[ Maybe[mask][e] ] == 1 )
-                    {
-                        sudo[r][c] = Maybe[mask][e];
-                        //printf("R Fill %d,%d  %d\n", r, c, sudo[r][c]);
-                        Horiz[r] |= 1 << sudo[r][c];
-                        Verti[c] |= 1 << sudo[r][c];
-                        Bloke[Hover[r][c]] |= 1 << sudo[r][c];
-                        fill++;
-                    }
-                }
-            }
-        }
-    }
-
-    //Cols
-    for (c = 0; c < 9; c++)
-    {
-        memset(possible, 0, sizeof(possible) );
-        for (r = 0; r < 9; r++)
-        {
-            if ( sudo[r][c] == 0 ) 
-            {
-                mask = Horiz[r] | Verti[c] | Bloke[Hover[r][c]];
-                for ( int e = 1; e <= Maybe[mask][0] ; e++)
-                {
-                    possible[ Maybe[mask][e] ]++;
-                }
-            }
-        }
-
-        for (r = 0; r < 9; r++)
-        {
-            if ( sudo[r][c] == 0 ) 
-            {
-                mask = Horiz[r] | Verti[c] | Bloke[Hover[r][c]];
-                for ( int e = 1; e <= Maybe[mask][0] ; e++)
-                {
-                    if ( possible[ Maybe[mask][e] ] == 1 )
-                    {
-                        sudo[r][c] = Maybe[mask][e];
-                        //printf("C Fill %d,%d  %d\n", r, c, sudo[r][c]);
-                        Horiz[r] |= 1 << sudo[r][c];
-                        Verti[c] |= 1 << sudo[r][c];
-                        Bloke[Hover[r][c]] |= 1 << sudo[r][c];
-                        fill++;
-                    }
-                }
-            }
-        }
-    }
-
-    //block
-    static int blk, in;
-
-    for (blk = 0; blk < 9; blk++)
-    {
-        memset(possible, 0, sizeof(possible) );
-        for (in = 0; in < 9; in++)
-        {
-            r = block_ele[blk][in].r;
-            c = block_ele[blk][in].c;
-            if ( sudo[r][c] == 0 ) 
-            {
-                mask = Horiz[r] | Verti[c] | Bloke[Hover[r][c]];
-                for ( int e = 1; e <= Maybe[mask][0] ; e++)
-                {
-                    possible[ Maybe[mask][e] ]++;
-                }
-            }
-        }
-
-        for (in = 0; in < 9; in++)
-        {
-            r = block_ele[blk][in].r;
-            c = block_ele[blk][in].c;
-            if ( sudo[r][c] == 0 ) 
-            {
-                mask = Horiz[r] | Verti[c] | Bloke[Hover[r][c]];
-                for ( int e = 1; e <= Maybe[mask][0] ; e++)
-                {
-                    if ( possible[ Maybe[mask][e] ] == 1 )
-                    {
-                        sudo[r][c] = Maybe[mask][e];
-                        //fprintf(stderr, "BLK Fill %d,%d  %d\n", r, c, sudo[r][c]);
-                        Horiz[r] |= 1 << sudo[r][c];
-                        Verti[c] |= 1 << sudo[r][c];
-                        Bloke[Hover[r][c]] |= 1 << sudo[r][c];
-                        fill++;
-                    }
-                }
-            }
-        }
-    }
-
-    return fill;
-}
-
 void update_Dit (Sdk sudo)
 {
     static int i, j;
@@ -284,16 +136,14 @@ void play (Sdk sudo)
     }
 
     update_Dit(sudo);
-    while (fill_one_possible_number(sudo) > 0) { update_Dit(sudo); }
-
-    explore (sudo);
+    explore (sudo, 0);
 } /* play */
 
-int explore (Sdk sudo)
+int explore (Sdk sudo, int lv)
 {
     int res, t;
     if (Head == Lost) return 0;
-    int this = best ();
+    int this = best();
     if (this == ERROR) return 0;
     if (this == OK) { print_sudo_inline(sudo); return 1; }
 
@@ -304,38 +154,40 @@ int explore (Sdk sudo)
     for (int it = 1; it <= maybe[OK]; it++)
     {
         int n = 1 << maybe[it];
-        t = sudo[w->h][w->v];
         sudo[w->h][w->v] = maybe[it];
         Horiz[w->h] |= n;
         Verti[w->v] |= n;
         Bloke[w->b] |= n;
-        res = explore (sudo);
-        if (res == 1) return 1;
+        res = explore (sudo, lv+1);
+        //if (res == 1) return 1;
+        // printf("%d %d\n", lv, maybe[it]);
         Horiz[w->h] ^= n;
         Verti[w->v] ^= n;
         Bloke[w->b] ^= n;
-        sudo[w->h][w->v] = t;
+        sudo[w->h][w->v] = 0;
     }
 
     Head--;
-    return 0;      //遍历所有可能数也没有结果？返回0
+    //return 0;      //遍历所有可能数也没有结果？返回0
 } /* explore */
 
 int best ()
 {
     register int min, best, posisi;
     register int head, this, maybe;
-    static Ijk *w;
+    Ijk *w;
     min    = 10;
     best   = OK;
     posisi = Head;
 
+    //空单元，索引迭代，从起点到末点
     for (head = Head; head < Tail; head++)
     {
-        w    = &Dit[head];
+        w    = &Dit[head];  //w = 对应单元
+                            //this = 查表用的掩码
         this = Verti[w->v] | Horiz[w->h] | Bloke[w->b];
         if (this == ERROR) return ERROR;
-        maybe = Maybe[this][OK];
+        maybe = Maybe[this][OK];  //maybe = 可能的数量
 
         if (min > maybe) {
             posisi = head, best = this;
@@ -343,6 +195,7 @@ int best ()
             min = maybe;
         }
     }
+    exit(0);
 
     Ijk dat = Dit[posisi];
     Dit[posisi] = Dit[Head];
