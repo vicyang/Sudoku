@@ -67,7 +67,6 @@ int main (int argc, char *argv[])
     {
         //time_a = clock();
         str_to_mat( gamenode->s, sudo );
-        //print_mat_inline(sudo);
         play (sudo);
 
         // fprintf(stderr, "Game ID: %d, Time used: %.3f\n", gamenode->id, 
@@ -292,7 +291,7 @@ void play (Sdk sudo)
 
 int explore (Sdk sudo)
 {
-    int t, res;
+    int res;
     if (Head == Lost) return 0;
     int this = best ();
     if (this == ERROR) return 0;
@@ -305,7 +304,6 @@ int explore (Sdk sudo)
     for (int it = 1; it <= maybe[OK]; it++)
     {
         int n = 1 << maybe[it];
-        t = sudo[w->h][w->v];
         sudo[w->h][w->v] = maybe[it];
         Horiz[w->h] |= n;
         Verti[w->v] |= n;
@@ -315,11 +313,11 @@ int explore (Sdk sudo)
         Horiz[w->h] ^= n;
         Verti[w->v] ^= n;
         Bloke[w->b] ^= n;
-        sudo[w->h][w->v] = t;
     }
-    
+
+    sudo[w->h][w->v] = 0;
     Head--;
-    return res;
+    return 0;      //遍历所有可能数也没有结果？返回0
 } /* explore */
 
 int best ()
