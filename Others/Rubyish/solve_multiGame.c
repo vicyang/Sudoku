@@ -37,7 +37,7 @@ void load_games( struct game * games, char *filename  );
 int fill_one_possible_number ();
 void print_sudo_inline( Sdk sudo );
 
-int explore (Sdk);
+void explore (Sdk);
 void echo (Sdk);
 void play (Sdk);
 void init (void);
@@ -60,14 +60,13 @@ int main (int argc, char *argv[])
     struct game *gamenode = (struct game *)malloc( sizeof(struct game) );
     load_games( gamenode, "../../Puzzles/sudoku17.txt" );
 
-    //备用数据初始化
+    //查询数据初始化
     init ();
 
     while ( gamenode->next != NULL )
     {
         //time_a = clock();
         str_to_mat( gamenode->s, sudo );
-        //print_mat_inline(sudo);
         play (sudo);
 
         // fprintf(stderr, "Game ID: %d, Time used: %.3f\n", gamenode->id, 
@@ -254,7 +253,7 @@ int fill_one_possible_number (Sdk sudo)
 
 void update_Dit (Sdk sudo)
 {
-    static int i, j;
+    int i, j;
     Head = 0;
     for (i = 0; i < 9; i++) 
         for (j = 0; j < 9; j++) 
@@ -268,7 +267,7 @@ void update_Dit (Sdk sudo)
 
 void play (Sdk sudo)
 {
-    static int i, j, k;
+    int i, j, k;
     for (i = 0; i < 9; i++)
         Horiz[i] = Verti[i] = Bloke[i] = 0;
 
@@ -290,53 +289,43 @@ void play (Sdk sudo)
     explore (sudo);
 } /* play */
 
-int explore (Sdk sudo)
-{
-    int t, res;
-    if (Head == Lost) return 0;
+void explore (Sdk sudo) {
+    if (Head == Lost) return;
     int this = best ();
-    if (this == ERROR) return 0;
-    if (this == OK) { print_sudo_inline(sudo); return 1; }
+    if (this == ERROR) return;
+    if (this == OK) { print_sudo_inline(sudo); return; }
 
-    int *maybe = &Maybe[this][OK];
+    kar *maybe = &Maybe[this][OK];
     Ijk *w     = &Dit[Head - 1];
 
-    res = 0;
-    for (int it = 1; it <= maybe[OK]; it++)
-    {
+    int t;
+    for (int it = 1; it <= maybe[OK]; it++) {
         int n = 1 << maybe[it];
         t = sudo[w->h][w->v];
         sudo[w->h][w->v] = maybe[it];
         Horiz[w->h] |= n;
         Verti[w->v] |= n;
         Bloke[w->b] |= n;
-        res = explore (sudo);
-        if (res == 1) return 1;
+        explore (sudo);
         Horiz[w->h] ^= n;
         Verti[w->v] ^= n;
         Bloke[w->b] ^= n;
-        sudo[w->h][w->v] = t;
     }
+    sudo[w->h][w->v] = 0;
     
     Head--;
-    return res;
 } /* explore */
 
-int best ()
-{
-    register int min, best, posisi;
-    register int head, this, maybe;
-    static Ijk *w;
-    min    = 10;
-    best   = OK;
-    posisi = Head;
+int best (){
+    int min    = 10;
+    int best   = OK;
+    int posisi = Head;
 
-    for (head = Head; head < Tail; head++)
-    {
-        w    = &Dit[head];
-        this = Verti[w->v] | Horiz[w->h] | Bloke[w->b];
+    for (int head = Head; head < Tail; head++) {
+        Ijk *w   = &Dit[head];
+        int this = Verti[w->v] | Horiz[w->h] | Bloke[w->b];
         if (this == ERROR) return ERROR;
-        maybe = Maybe[this][OK];
+        int maybe = Maybe[this][OK];
 
         if (min > maybe) {
             posisi = head, best = this;
@@ -350,7 +339,6 @@ int best ()
     Dit[Head++] = dat;
     return best;
 } /* best */
-
 
 void echo (Sdk sudo)
 {
