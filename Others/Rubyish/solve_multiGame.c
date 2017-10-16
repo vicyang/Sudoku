@@ -46,7 +46,7 @@ int main (int argc, char *argv[])
     int time_a;
     Sdk sudo;
     struct game *gamenode = (struct game *)malloc( sizeof(struct game) );
-    load_games( gamenode, "../../Puzzles/sudoku_nd0.txt" );
+    load_games( gamenode, "../../Puzzles/sudoku17.txt" );
 
     //备用数据初始化
     init ();
@@ -146,23 +146,27 @@ void explore (Sdk sudo)
     Head--;
 } /* explore */
 
-int best ()
-{
+int best (){
     int min    = 10;
+    int Magic  = 10;
     int best   = OK;
     int posisi = Head;
 
-    for (int head = Head; head < Tail; head++) 
-    {
+    for (int head = Head; head < Tail; head++) {
         Ijk *w   = &Dit[head];
         int this = Verti[w->v] | Horiz[w->h] | Bloke[w->b];
         if (this == ERROR) return ERROR;
         int maybe = Maybe[this][OK];
 
+        int that  = Verti[w->v] & Horiz[w->h] & Bloke[w->b];
+        int magic = Maybe[that][OK];
+
         if (min > maybe) {
-            posisi = head, best = this;
+            posisi = head, best = this,Magic = magic;
             if (maybe == BEST) break;
             min = maybe;
+        } else if (min == maybe && Magic < magic) {
+            posisi = head, best = this, Magic = magic;
         }
     }
 
