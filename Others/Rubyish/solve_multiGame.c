@@ -23,6 +23,13 @@ struct game {
     struct game *next;
 };
 
+struct position { 
+    int r, c;
+};
+
+struct position block_ele[9][9];
+
+int fill_one_possible_number ();
 void str_to_mat( char *s, Sdk sudo );
 void load_games( struct game * games, char *filename  );
 void explore (Sdk);
@@ -31,12 +38,12 @@ void play (Sdk);
 void init (void);
 int best ();
 
-int Verti[9];
-int Horiz[9];
-int Bloke[9];
+int Verti[9];         //列-掩码
+int Horiz[9];         //行-掩码
+int Bloke[9];         //区块-掩码
 int Hover[9][9];
-kar Maybe[1024][10];
-Ijk Dit[81];
+kar Maybe[1024][10];  //掩码-可能数 映射表
+Ijk Dit[81];          //空单元，unsolved列表
 int Head;
 int Tail;
 int Lost;
@@ -55,7 +62,10 @@ int main (int argc, char *argv[])
     {
         // time_a = clock();
         str_to_mat( gamenode->s, sudo );
+        //echo(sudo);
+
         play (sudo);
+        //echo(sudo);
 
         // fprintf(stderr, "Game ID: %d, Time used: %.3f\n", gamenode->id, 
         //     (float)(clock()-time_a)/(float)CLOCKS_PER_SEC );
@@ -76,6 +86,14 @@ void init ()
             Hover[i][j] = j / 3 + i3;
     }
 
+    // for (int m = 0; m < 9; m++)
+    //     for (int n = 0; n < 9; n++)
+    //     {
+    //         //m:block_id, n:block_element_id
+    //         block_ele[m][n].r = (int)(m/3)*3 + (int)(n/3); 
+    //         block_ele[m][n].c = m % 3 * 3 + n % 3;
+    //     }
+
     for (int n = 0; n < ERROR; n += 2) 
     {
         int len = 0;
@@ -88,39 +106,199 @@ void init ()
     }
 }
 
+int fill_one_possible_number (Sdk sudo)
+{
+    static int r, c;
+    static int idx;
+    int mask;
+    int fill = 0;
+    char buff[10];
+    Ijk *w;
+
+    int possible[10];
+
+    for (idx = Head; idx < Tail; idx++)
+    {
+        w = &Dit[idx];
+        //mask
+        mask = Horiz[w->h] | Verti[w->v] | Bloke[w->b];
+        if ( Maybe[mask][0] == 1 )
+        {
+            sudo[w->h][w->v] = Maybe[mask][1];
+            Horiz[w->h] |= 1 << sudo[w->h][w->v];
+            Verti[w->v] |= 1 << sudo[w->h][w->v];
+            Bloke[w->b] |= 1 << sudo[w->h][w->v];
+            //printf("Fill %d,%d  %d\n", w->h, w->v,  sudo[w->h][w->v]);
+            fill++;
+        }
+    }
+
+    //ROW
+    for (r = 0; r < 9; r++)
+    {
+        memset(possible, 0, sizeof(possible) );
+        for (c = 0; c < 9; c++)
+        {
+            if ( sudo[r][c] == 0 ) 
+            {
+                mask = Horiz[r] | Verti[c] | Bloke[Hover[r][c]];
+                for ( int e = 1; e <= Maybe[mask][0] ; e++)
+                {
+                    possible[ Maybe[mask][e] ]++;
+                }
+            }
+        }
+
+        for (c = 0; c < 9; c++)
+        {
+            if ( sudo[r][c] == 0 ) 
+            {
+                mask = Horiz[r] | Verti[c] | Bloke[Hover[r][c]];
+                for ( int e = 1; e <= Maybe[mask][0] ; e++)
+                {
+                    if ( possible[ Maybe[mask][e] ] == 1 )
+                    {
+                        sudo[r][c] = Maybe[mask][e];
+                        //printf("R Fill %d,%d  %d\n", r, c, sudo[r][c]);
+                        Horiz[r] |= 1 << sudo[r][c];
+                        Verti[c] |= 1 << sudo[r][c];
+                        Bloke[Hover[r][c]] |= 1 << sudo[r][c];
+                        fill++;
+                    }
+                }
+            }
+        }
+    }
+
+    //Cols
+    for (c = 0; c < 9; c++)
+    {
+        memset(possible, 0, sizeof(possible) );
+        for (r = 0; r < 9; r++)
+        {
+            if ( sudo[r][c] == 0 ) 
+            {
+                mask = Horiz[r] | Verti[c] | Bloke[Hover[r][c]];
+                for ( int e = 1; e <= Maybe[mask][0] ; e++)
+                {
+                    possible[ Maybe[mask][e] ]++;
+                }
+            }
+        }
+
+        for (r = 0; r < 9; r++)
+        {
+            if ( sudo[r][c] == 0 ) 
+            {
+                mask = Horiz[r] | Verti[c] | Bloke[Hover[r][c]];
+                for ( int e = 1; e <= Maybe[mask][0] ; e++)
+                {
+                    possible[ Maybe[mask][e] ]++;
+                }
+            }
+        }
+    }
+
+    // //block
+    // static int rr, cc;
+    // static int blk, in;
+
+    // for (blk = 0; blk < 9; blk++)
+    // {
+    //     memset(possible, 0, sizeof(possible) );
+    //     for (in = 0; in < 9; in++)
+    //     {
+    //         rr = block_ele[blk][in].r;
+    //         cc = block_ele[blk][in].c;
+    //         if ( sudo[rr][cc] == 0 ) 
+    //         {
+    //             mask = Horiz[rr] | Verti[cc] | Bloke[Hover[rr][cc]];
+    //             for ( int e = 1; e <= Maybe[mask][0]; e++)
+    //             {
+    //                 if ( possible[ Maybe[mask][e] ] == 1 )
+    //                 {
+    //                     sudo[rr][cc] = Maybe[mask][e];
+    //                     //printf("C Fill %d,%d  %d\n", r, c, sudo[r][c]);
+    //                     Horiz[rr] |= 1 << sudo[rr][cc];
+    //                     Verti[cc] |= 1 << sudo[rr][cc];
+    //                     Bloke[Hover[rr][cc]] |= 1 << sudo[rr][cc];
+    //                     fill++;
+    //                 }
+    //             }
+    //         }
+    //     }
+
+    //     for (in = 0; in < 9; in++)
+    //     {
+    //         rr = block_ele[blk][in].r;
+    //         cc = block_ele[blk][in].c;
+    //         if ( sudo[rr][cc] == 0 )
+    //         {
+    //             mask = Horiz[rr] | Verti[cc] | Bloke[Hover[rr][cc]];
+    //             for ( int e = 1; e <= Maybe[mask][0]; e++)
+    //             {
+    //                 if ( possible[ Maybe[mask][e] ] == 1 )
+    //                 {
+    //                     sudo[rr][cc] = Maybe[mask][e];
+    //                     //printf("B Fill %d,%d  %d\n", r, c, sudo[r][c]);
+    //                     Horiz[rr] |= 1 << sudo[rr][cc];
+    //                     Verti[cc] |= 1 << sudo[rr][cc];
+    //                     Bloke[Hover[rr][cc]] |= 1 << sudo[rr][cc];
+    //                     fill++;
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
+
+    return fill;
+}
+
+void update_Dit (Sdk sudo)
+{
+    static int i, j, k;
+    Head = 0;
+    for (i = 0; i < 9; i++) 
+    {
+        for (j = 0; j < 9; j++) 
+        {
+            if ( !sudo[i][j] )
+            {
+                Dit[Head++] = (Ijk) {j, i, Hover[i][j] };
+            }
+        }
+    }
+
+    Tail = Head;      //空单元数量
+    Lost = Tail + 1;  //越界
+    Head = 0;         //起点
+}
+
 void play (Sdk sudo)
 {
     static int i, j, k;
     for (i = 0; i < 9; i++)
         Horiz[i] = Verti[i] = Bloke[i] = 0;
 
-    Head = 0;
-    for (i = 0; i < 9; i++) 
+    for (i = 0; i < 9; i++)
     {
-        for (j = 0; j < 9; j++) 
+        for (j = 0; j < 9; j++)
         {
-            k = Hover[i][j];
-            if (!sudo[i][j]) 
-            {
-                Dit[Head++] = (Ijk) {j, i, k };
-                continue;
-            }
-
+            if ( !sudo[i][j] ) continue;
             Horiz[i] |= 1 << sudo[i][j];
             Verti[j] |= 1 << sudo[i][j];
-            Bloke[k] |= 1 << sudo[i][j];
+            Bloke[Hover[i][j]] |= 1 << sudo[i][j];
         }
     }
 
-    Tail = Head;
-    Lost = Tail + 1;
-    Head = 0;
+    update_Dit(sudo);
+    while (fill_one_possible_number(sudo) > 0) { update_Dit(sudo); }
 
     explore (sudo);
     puts (" ___________________");
 } /* play */
 
-void explore (Sdk sudo) 
+void explore (Sdk sudo)
 {
     if (Head == Lost) return;
     int this = best ();
@@ -130,7 +308,7 @@ void explore (Sdk sudo)
     kar *maybe = &Maybe[this][OK];
     Ijk *w     = &Dit[Head - 1];
 
-    for (int it = 1; it <= maybe[OK]; it++) 
+    for (int it = 1; it <= maybe[OK]; it++)
     {
         int n = 1 << maybe[it];
         sudo[w->h][w->v] = maybe[it];
@@ -146,27 +324,23 @@ void explore (Sdk sudo)
     Head--;
 } /* explore */
 
-int best (){
+int best ()
+{
     int min    = 10;
-    int Magic  = 10;
     int best   = OK;
     int posisi = Head;
 
-    for (int head = Head; head < Tail; head++) {
+    for (int head = Head; head < Tail; head++)
+    {
         Ijk *w   = &Dit[head];
         int this = Verti[w->v] | Horiz[w->h] | Bloke[w->b];
         if (this == ERROR) return ERROR;
         int maybe = Maybe[this][OK];
 
-        int that  = Verti[w->v] & Horiz[w->h] & Bloke[w->b];
-        int magic = Maybe[that][OK];
-
         if (min > maybe) {
-            posisi = head, best = this,Magic = magic;
+            posisi = head, best = this;
             if (maybe == BEST) break;
             min = maybe;
-        } else if (min == maybe && Magic < magic) {
-            posisi = head, best = this, Magic = magic;
         }
     }
 
@@ -176,12 +350,14 @@ int best (){
     return best;
 } /* best */
 
+
 void echo (Sdk sudo)
 {
-    for (int i = 0; i < 9; i++) 
+    static int i, j;
+    for (i = 0; i < 9; i++) 
     {
         if (!(i % 3)) puts ("");
-        for (int j = 0; j < 9; j++) 
+        for (j = 0; j < 9; j++) 
         {
             if (!(j % 3)) printf (" ");
             printf ("%d ", sudo[i][j]);
@@ -218,4 +394,14 @@ void str_to_mat( char *s, Sdk sudo )
         c = (int)(i%9);
         sudo[r][c] = s[i] - delta;  //char to integer
     }
+}
+
+void print_sudo_inline( Sdk sudo )
+{
+    static int r, c;
+    for (r = 0; r < 9; r++ )
+        for (c = 0; c < 9; c++ )
+            printf("%d", sudo[r][c] );
+
+    printf("\n");
 }
