@@ -144,23 +144,30 @@ int explore (Sdk sudo, int lv)
     int res, t;
     if (Head == Lost) return 0;
     int this = best();
-    if (this == ERROR) return 0;
-    if (this == OK) { print_sudo_inline(sudo); return 1; }
+    if (this == 0b1111111110) return 0;
+    
+    if (this == 0b0000000000) 
+    {
+        print_sudo_inline(sudo); 
+        return 1; 
+    }
 
-    int *maybe = &Maybe[this][OK];
+    int *possible = Maybe[this];
     Ijk *w     = &Dit[Head - 1];
 
     res = 0;
-    for (int it = 1; it <= maybe[OK]; it++)
+    int idx, n;
+    for (idx = 1; idx <= possible[0]; idx++)
     {
-        int n = 1 << maybe[it];
-        sudo[w->h][w->v] = maybe[it];
+        n = 1 << possible[idx];
+        sudo[w->h][w->v] = possible[idx];
+
         Horiz[w->h] |= n;
         Verti[w->v] |= n;
         Bloke[w->b] |= n;
         res = explore (sudo, lv+1);
         //if (res == 1) return 1;
-        // printf("%d %d\n", lv, maybe[it]);
+        // printf("%d %d\n", lv, possible[idx]);
         Horiz[w->h] ^= n;
         Verti[w->v] ^= n;
         Bloke[w->b] ^= n;
@@ -173,31 +180,31 @@ int explore (Sdk sudo, int lv)
 
 int best ()
 {
-    register int min, best, posisi;
-    register int head, this, maybe;
+    register int min, best, select;
+    register int idx, mask, maybe;
     Ijk *w;
     min    = 10;  //设一个最小量
-    best   = OK;
-    posisi = Head;
+    best   = 0b0000000000;
+    select = Head;
 
     //空单元，索引迭代，从起点到末点
-    for (head = Head; head < Tail; head++)
+    for (idx = Head; idx < Tail; idx++)
     {
-        w    = &Dit[head];  //w = 对应单元
-                            //this = 查表用的掩码
-        this = Verti[w->v] | Horiz[w->h] | Bloke[w->b];
-        if (this == ERROR) return ERROR;
-        maybe = Maybe[this][OK];  //maybe = 可能的数量
+        w    = &Dit[idx];  //w = 对应单元
+                           //mask = 查表用的掩码
+        mask = Verti[w->v] | Horiz[w->h] | Bloke[w->b];
+        if (mask == ERROR) return ERROR;
+        maybe = Maybe[mask][OK];  //maybe = 可能的数量
 
         if ( maybe < min ) {
-            posisi = head, best = this;
+            select = idx, best = mask;
             if (maybe == BEST) break;
             min = maybe;
         }
     }
 
-    Ijk dat = Dit[posisi];
-    Dit[posisi] = Dit[Head];
+    Ijk dat = Dit[select];
+    Dit[select] = Dit[Head];
     Dit[Head++] = dat;
     return best;
 } /* best */
