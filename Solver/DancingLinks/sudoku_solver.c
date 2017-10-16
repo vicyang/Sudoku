@@ -95,7 +95,7 @@ int main(int argc, char *argv[] )
     head = &C[0];
 
     struct game *gamenode = (struct game *)malloc( sizeof(struct game) );
-    load_games( gamenode, "../../Puzzles/sudoku_nd3.txt" );
+    load_games( gamenode, "../../Puzzles/sudoku17.txt" );
 
     build_tables(sparenums);
     set_block_index(block_id);
