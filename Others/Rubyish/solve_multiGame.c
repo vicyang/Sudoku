@@ -107,13 +107,11 @@ void init ()
 
 int fill_one_possible_number (Sdk sudo)
 {
-    static int r, c;
     static int idx;
-    int mask;
+    static int mask;
     int fill = 0;
     Ijk *w;
 
-    int possible[10];
     for (idx = 0; idx < Tail; idx++)
     {
         w = &Dit[idx];
@@ -131,112 +129,95 @@ int fill_one_possible_number (Sdk sudo)
     }
 
     //ROW
-    for (r = 0; r < 9; r++)
+    static int m, n, e, r, c;
+    static int Rmask, Cmask, Bmask;
+    static int Rpossible[10];
+    static int Cpossible[10];
+    static int Bpossible[10];
+
+    for (m = 0; m < 9; m++)
     {
-        memset(possible, 0, sizeof(possible) );
-        for (c = 0; c < 9; c++)
+        memset(Rpossible, 0, sizeof(Rpossible) );
+        memset(Cpossible, 0, sizeof(Cpossible) );
+        memset(Bpossible, 0, sizeof(Bpossible) );
+
+        for (n = 0; n < 9; n++)
         {
+            r = block_ele[m][n].r;
+            c = block_ele[m][n].c;
+
+            if ( sudo[m][n] == 0 ) 
+            {
+                Rmask = Horiz[m] | Verti[n] | Bloke[Hover[m][n]];
+                for ( e = 1; e <= Maybe[Rmask][0] ; e++)
+                    Rpossible[ Maybe[Rmask][e] ]++;
+            }
+            if ( sudo[n][m] == 0 ) 
+            {
+                Cmask = Horiz[n] | Verti[m] | Bloke[Hover[n][m]];
+                for ( e = 1; e <= Maybe[Cmask][0] ; e++)
+                    Cpossible[ Maybe[Cmask][e] ]++;
+            }
             if ( sudo[r][c] == 0 ) 
             {
-                mask = Horiz[r] | Verti[c] | Bloke[Hover[r][c]];
-                for ( int e = 1; e <= Maybe[mask][0] ; e++)
+                Bmask = Horiz[r] | Verti[c] | Bloke[Hover[r][c]];
+                for ( e = 1; e <= Maybe[Bmask][0] ; e++)
                 {
-                    possible[ Maybe[mask][e] ]++;
+                    Bpossible[ Maybe[Bmask][e] ]++;
                 }
             }
         }
 
-        for (c = 0; c < 9; c++)
+        for (n = 0; n < 9; n++)
         {
-            if ( sudo[r][c] == 0 ) 
+            //Rows
+            if ( sudo[m][n] == 0 ) 
             {
-                mask = Horiz[r] | Verti[c] | Bloke[Hover[r][c]];
-                for ( int e = 1; e <= Maybe[mask][0] ; e++)
+                Rmask = Horiz[m] | Verti[n] | Bloke[Hover[m][n]];
+                for ( e = 1; e <= Maybe[Rmask][0] ; e++)
                 {
-                    if ( possible[ Maybe[mask][e] ] == 1 )
+                    if ( Rpossible[ Maybe[Rmask][e] ] == 1 )
                     {
-                        sudo[r][c] = Maybe[mask][e];
-                        //printf("R Fill %d,%d  %d\n", r, c, sudo[r][c]);
-                        Horiz[r] |= 1 << sudo[r][c];
-                        Verti[c] |= 1 << sudo[r][c];
-                        Bloke[Hover[r][c]] |= 1 << sudo[r][c];
+                        sudo[m][n] = Maybe[Rmask][e];
+                        //printf("R Fill %d,%d  %d\n", m, n, sudo[m][n]);
+                        Horiz[m] |= 1 << sudo[m][n];
+                        Verti[n] |= 1 << sudo[m][n];
+                        Bloke[Hover[m][n]] |= 1 << sudo[m][n];
                         fill++;
                     }
                 }
             }
-        }
-    }
 
-    //Cols
-    for (c = 0; c < 9; c++)
-    {
-        memset(possible, 0, sizeof(possible) );
-        for (r = 0; r < 9; r++)
-        {
-            if ( sudo[r][c] == 0 ) 
+            //Cols
+            if ( sudo[n][m] == 0 )
             {
-                mask = Horiz[r] | Verti[c] | Bloke[Hover[r][c]];
-                for ( int e = 1; e <= Maybe[mask][0] ; e++)
+                Cmask = Horiz[n] | Verti[m] | Bloke[Hover[n][m]];
+                for ( e = 1; e <= Maybe[Cmask][0] ; e++)
                 {
-                    possible[ Maybe[mask][e] ]++;
-                }
-            }
-        }
-
-        for (r = 0; r < 9; r++)
-        {
-            if ( sudo[r][c] == 0 ) 
-            {
-                mask = Horiz[r] | Verti[c] | Bloke[Hover[r][c]];
-                for ( int e = 1; e <= Maybe[mask][0] ; e++)
-                {
-                    if ( possible[ Maybe[mask][e] ] == 1 )
+                    if ( Cpossible[ Maybe[Cmask][e] ] == 1 )
                     {
-                        sudo[r][c] = Maybe[mask][e];
-                        //printf("C Fill %d,%d  %d\n", r, c, sudo[r][c]);
-                        Horiz[r] |= 1 << sudo[r][c];
-                        Verti[c] |= 1 << sudo[r][c];
-                        Bloke[Hover[r][c]] |= 1 << sudo[r][c];
+                        sudo[n][m] = Maybe[Cmask][e];
+                        //printf("C Fill %d,%d  %d\n", m, n, sudo[n][m]);
+                        Horiz[n] |= 1 << sudo[n][m];
+                        Verti[m] |= 1 << sudo[n][m];
+                        Bloke[Hover[n][m]] |= 1 << sudo[n][m];
                         fill++;
                     }
                 }
             }
-        }
-    }
 
-    //block
-    static int blk, in;
-
-    for (blk = 0; blk < 9; blk++)
-    {
-        memset(possible, 0, sizeof(possible) );
-        for (in = 0; in < 9; in++)
-        {
-            r = block_ele[blk][in].r;
-            c = block_ele[blk][in].c;
+            //Blocks
+            r = block_ele[m][n].r;
+            c = block_ele[m][n].c;
             if ( sudo[r][c] == 0 ) 
             {
-                mask = Horiz[r] | Verti[c] | Bloke[Hover[r][c]];
-                for ( int e = 1; e <= Maybe[mask][0] ; e++)
+                Bmask = Horiz[r] | Verti[c] | Bloke[Hover[r][c]];
+                for ( e = 1; e <= Maybe[Bmask][0] ; e++)
                 {
-                    possible[ Maybe[mask][e] ]++;
-                }
-            }
-        }
-
-        for (in = 0; in < 9; in++)
-        {
-            r = block_ele[blk][in].r;
-            c = block_ele[blk][in].c;
-            if ( sudo[r][c] == 0 ) 
-            {
-                mask = Horiz[r] | Verti[c] | Bloke[Hover[r][c]];
-                for ( int e = 1; e <= Maybe[mask][0] ; e++)
-                {
-                    if ( possible[ Maybe[mask][e] ] == 1 )
+                    if ( Bpossible[ Maybe[Bmask][e] ] == 1 )
                     {
-                        sudo[r][c] = Maybe[mask][e];
-                        //fprintf(stderr, "BLK Fill %d,%d  %d\n", r, c, sudo[r][c]);
+                        sudo[r][c] = Maybe[Bmask][e];
+                        //printf("B Fill %d,%d  %d\n", r, c, sudo[r][c]);
                         Horiz[r] |= 1 << sudo[r][c];
                         Verti[c] |= 1 << sudo[r][c];
                         Bloke[Hover[r][c]] |= 1 << sudo[r][c];
