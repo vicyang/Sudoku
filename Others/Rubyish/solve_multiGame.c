@@ -37,11 +37,11 @@ void load_games( struct game * games, char *filename  );
 int fill_one_possible_number ();
 void print_sudo_inline( Sdk sudo );
 
-int explore (Sdk);
+int explore (Sdk, int);
 void echo (Sdk);
 void play (Sdk);
 void init (void);
-int best ();
+int best (int);
 
 int Verti[9];         //列-掩码
 int Horiz[9];         //行-掩码
@@ -49,7 +49,6 @@ int Bloke[9];         //区块-掩码
 int Hover[9][9];
 int Maybe[1024][10];  //掩码-可能数 映射表
 Ijk Dit[81];          //空单元，unsolved列表
-int Head;
 int Tail;
 int Lost;
 
@@ -115,7 +114,7 @@ int fill_one_possible_number (Sdk sudo)
     Ijk *w;
 
     int possible[10];
-    for (idx = Head; idx < Tail; idx++)
+    for (idx = 0; idx < Tail; idx++)
     {
         w = &Dit[idx];
         //mask
@@ -253,16 +252,15 @@ int fill_one_possible_number (Sdk sudo)
 
 void update_Dit (Sdk sudo)
 {
-    static int i, j;
-    Head = 0;
+    static int i, j, index;
+    index = 0;
     for (i = 0; i < 9; i++) 
         for (j = 0; j < 9; j++) 
             if ( !sudo[i][j] )
-                Dit[Head++] = (Ijk) {j, i, Hover[i][j] };
+                Dit[index++] = (Ijk) { j, i, Hover[i][j] };
 
-    Tail = Head;      //空单元数量
+    Tail = index;     //空单元数量
     Lost = Tail + 1;  //越界
-    Head = 0;         //起点
 }
 
 void play (Sdk sudo)
@@ -286,29 +284,29 @@ void play (Sdk sudo)
     update_Dit(sudo);
     while (fill_one_possible_number(sudo) > 0) { update_Dit(sudo); }
 
-    explore (sudo);
+    explore (sudo, 0);
 } /* play */
 
-int explore (Sdk sudo)
+int explore (Sdk sudo, int lv)
 {
     int res;
-    if (Head == Lost) return 0;
-    int this = best ();
-    if (this == ERROR) return 0;
-    if (this == OK) { print_sudo_inline(sudo); return 1; }
+    int mask = best (lv);
+    if (mask == ERROR) return 0;
+    if (mask == OK) { print_sudo_inline(sudo); return 1; }
 
-    int *maybe = &Maybe[this][OK];
-    Ijk *w     = &Dit[Head - 1];
+    int *possible = Maybe[mask];
+    Ijk *w     = &Dit[lv];
 
     res = 0;
-    for (int it = 1; it <= maybe[OK]; it++)
+    int it, n;
+    for (it = 1; it <= possible[OK]; it++)
     {
-        int n = 1 << maybe[it];
-        sudo[w->h][w->v] = maybe[it];
+        n = 1 << possible[it];
+        sudo[w->h][w->v] = possible[it];
         Horiz[w->h] |= n;
         Verti[w->v] |= n;
         Bloke[w->b] |= n;
-        res = explore (sudo);
+        res = explore (sudo, lv+1);
         if (res == 1) return 1;
         Horiz[w->h] ^= n;
         Verti[w->v] ^= n;
@@ -316,36 +314,35 @@ int explore (Sdk sudo)
     }
 
     sudo[w->h][w->v] = 0;
-    Head--;
     return 0;      //遍历所有可能数也没有结果？返回0
 } /* explore */
 
-int best ()
+int best (int begin)
 {
-    register int min, best, posisi;
-    register int head, this, maybe;
+    register int min, best, select;
+    register int head, this, count;
     static Ijk *w;
     min    = 10;
-    best   = OK;
-    posisi = Head;
+    best   = 0;
+    select = begin;
 
-    for (head = Head; head < Tail; head++)
+    for (head = begin; head < Tail; head++)
     {
         w    = &Dit[head];
         this = Verti[w->v] | Horiz[w->h] | Bloke[w->b];
         if (this == ERROR) return ERROR;
-        maybe = Maybe[this][OK];
+        count = Maybe[this][0];
 
-        if (min > maybe) {
-            posisi = head, best = this;
-            if (maybe == BEST) break;
-            min = maybe;
+        if (min > count) {
+            select = head, best = this;
+            if (count == BEST) break;
+            min = count;
         }
     }
 
-    Ijk dat = Dit[posisi];
-    Dit[posisi] = Dit[Head];
-    Dit[Head++] = dat;
+    Ijk dat = Dit[select];
+    Dit[select] = Dit[begin];
+    Dit[begin] = dat;
     return best;
 } /* best */
 
