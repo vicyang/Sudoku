@@ -128,16 +128,11 @@ void play (Sdk sudo)
 
 int explore (Sdk sudo, int lv)
 {
-    int res, t, mask;
-    
+    int res, mask;
     mask = best( lv );
     if (mask == 0b1111111110) return 0;
-
     //没有找到空单元，即为终盘
-    if (mask == 0) {
-        print_sudo_inline(sudo);
-        return 1;
-    }
+    if (mask == 0) { print_sudo_inline(sudo); return 1; }
 
     int *possible = Maybe[ mask ];
     Ijk *w     = &Dit[lv];
@@ -148,7 +143,6 @@ int explore (Sdk sudo, int lv)
     {
         n = 1 << possible[idx];
         sudo[w->h][w->v] = possible[idx];
-
         Horiz[w->h] |= n;
         Verti[w->v] |= n;
         Bloke[w->b] |= n;
@@ -159,7 +153,6 @@ int explore (Sdk sudo, int lv)
         Bloke[w->b] ^= n;
         sudo[w->h][w->v] = 0;
     }
-
     return 0;
 }
 
@@ -174,7 +167,7 @@ int best ( int begin )
     //空单元，索引迭代，从起点到末点
     for (idx = begin; idx < Tail; idx++)
     {
-        w    = &Dit[idx];        //w = 对应单元
+        w    = &Dit[idx];        //w = 对应单元坐标信息
         mask = Verti[w->v] | Horiz[w->h] | Bloke[w->b];
         if (mask == ERROR) return ERROR;
         count = Maybe[mask][0];  //count = 可选数的个数
