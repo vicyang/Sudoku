@@ -23,12 +23,6 @@ struct game {
     struct game *next;
 };
 
-struct position {
-    int r, c;
-};
-
-struct position block_ele[9][9];
-
 void str_to_mat( char *s, Sdk sudo );
 void load_games( struct game * games, char *filename  );
 int fill_one_possible_number ();
@@ -38,7 +32,7 @@ int explore (Sdk, int);
 void echo (Sdk);
 void play (Sdk);
 void init (void);
-int best ();
+int best (int);
 
 int Verti[9];         //列-掩码
 int Horiz[9];         //行-掩码
@@ -66,10 +60,10 @@ int main (int argc, char *argv[])
         str_to_mat( gamenode->s, sudo );
         play (sudo);
 
-        fprintf(stderr, "Game ID: %d, Time used: %.3f\n", gamenode->id, 
+        printf("Game ID: %d, Time used: %.3f\n", gamenode->id, 
             (float)(clock()-time_a)/(float)CLOCKS_PER_SEC );
         gamenode = gamenode->next;
-        break;
+        //break;
     }
 
     fprintf(stderr, "Time used: %.3f\n", (float)clock() / (float)CLOCKS_PER_SEC );
@@ -80,16 +74,9 @@ void init ()
 {
     static int m, n, i, len;
     for (m = 0; m < 9; m++)
-    {
         for (n = 0; n < 9; n++)
-        {
-            //m:row, n:col
+            //m:row, n:col <=> block_id
             Hover[m][n] = (int)(m/3)*3 + (int)(n/3);
-            //m:block_id, n:block_element_id
-            block_ele[m][n].r = (int)(m/3)*3 + (int)(n/3); 
-            block_ele[m][n].c = m % 3 * 3 + n % 3;
-        }
-    }
 
     for (m = 0; m < 0b1111111110; m += 2) 
     {
