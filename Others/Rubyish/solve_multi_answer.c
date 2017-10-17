@@ -141,19 +141,19 @@ void play (Sdk sudo)
 
 int explore (Sdk sudo, int lv)
 {
-    int res, t;
-    if (Head == Lost) return 0;
-    int this = best();
-    if (this == 0b1111111110) return 0;
+    int res, t, mask;
     
-    if (this == 0b0000000000) 
-    {
-        print_sudo_inline(sudo); 
-        return 1; 
+    mask = best( lv );
+    if (mask == 0b1111111110) return 0;
+
+    //没有找到空单元，即为终盘
+    if (mask == 0) {
+        print_sudo_inline(sudo);
+        return 1;
     }
 
-    int *possible = Maybe[this];
-    Ijk *w     = &Dit[Head - 1];
+    int *possible = Maybe[ mask ];
+    Ijk *w     = &Dit[lv];
 
     res = 0;
     int idx, n;
@@ -166,49 +166,51 @@ int explore (Sdk sudo, int lv)
         Verti[w->v] |= n;
         Bloke[w->b] |= n;
         res = explore (sudo, lv+1);
-        //if (res == 1) return 1;
-        // printf("%d %d\n", lv, possible[idx]);
+        // if (res == 1) return 1;
         Horiz[w->h] ^= n;
         Verti[w->v] ^= n;
         Bloke[w->b] ^= n;
         sudo[w->h][w->v] = 0;
     }
 
-    Head--;
-    //return 0;      //遍历所有可能数也没有结果？返回0
-} /* explore */
+    return 0;
+}
 
-int best ()
+int best ( int begin )
 {
     register int min, best, select;
-    register int idx, mask, maybe;
+    register int idx, mask, count;
     Ijk *w;
     min    = 10;  //设一个最小量
-    best   = 0b0000000000;
-    select = Head;
+    select = -1;
 
     //空单元，索引迭代，从起点到末点
-    for (idx = Head; idx < Tail; idx++)
+    for (idx = begin; idx < Tail; idx++)
     {
-        w    = &Dit[idx];  //w = 对应单元
-                           //mask = 查表用的掩码
+        w    = &Dit[idx];        //w = 对应单元
         mask = Verti[w->v] | Horiz[w->h] | Bloke[w->b];
         if (mask == ERROR) return ERROR;
-        maybe = Maybe[mask][OK];  //maybe = 可能的数量
+        count = Maybe[mask][0];  //count = 可选数的个数
 
-        if ( maybe < min ) {
+        if ( count < min ) 
+        {
             select = idx, best = mask;
-            if (maybe == BEST) break;
-            min = maybe;
+            if (count == 1) break;
+            min = count;
         }
     }
 
-    Ijk dat = Dit[select];
-    Dit[select] = Dit[Head];
-    Dit[Head++] = dat;
-    return best;
-} /* best */
-
+    //最优项与范围"池"第一项交换
+    if (select != -1)
+    {
+        Ijk dat = Dit[select];
+        Dit[select] = Dit[begin];
+        Dit[begin]  = dat;
+        return best;
+    }
+    else
+        return 0;
+}
 
 void echo (Sdk sudo)
 {
