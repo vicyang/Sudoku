@@ -295,8 +295,8 @@ int explore (Sdk sudo, int lv)
     }
 
     sudo[w->h][w->v] = 0;
-    return 0;      //遍历所有可能数也没有结果？返回0
-} /* explore */
+    return 0;   //遍历所有可选数没有结果？返回0
+}
 
 int best (int begin)
 {
