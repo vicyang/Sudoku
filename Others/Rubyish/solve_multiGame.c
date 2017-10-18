@@ -78,7 +78,7 @@ int main (int argc, char *argv[])
     if (argc > 1)
         load_games( gamenode, argv[1] );
     else
-        load_games( gamenode, "./sudoku17.txt" );
+        load_games( gamenode, "../../puzzles/sudoku17.txt" );
 
     //初始化查询数据
     init ();
