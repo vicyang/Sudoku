@@ -75,9 +75,12 @@ int main (int argc, char *argv[])
     int time_a;
     Sdk sudo;
     struct game *gamenode = (struct game *)malloc( sizeof(struct game) );
-    load_games( gamenode, "../../Puzzles/sudoku17.txt" );
+    if (argc > 1)
+        load_games( gamenode, argv[1] );
+    else
+        load_games( gamenode, "./sudoku17.txt" );
 
-    //备用数据初始化
+    //初始化查询数据
     init ();
 
     while ( gamenode->next != NULL )
@@ -216,7 +219,6 @@ int explore (Sdk sudo) {
     }
     sudo[w->h][w->v] = 0;
     Head--;
-    return 0;
 } /* explore */
 
 int best (){
@@ -264,8 +266,14 @@ void echo (Sdk sudo)
 void load_games( struct game * node, char *filename  )
 {
     FILE *fp;
-    fp = fopen( filename, "r" );
+    fp = fopen(filename, "r");
+    if ( fp == NULL ) 
+    {
+        fprintf(stderr, "Failed to read file: %s\n", filename);
+        exit(0);
+    }
 
+    fprintf(stderr, "Solving puzzles from %s\n", filename);
     int id = 1;
     while ( ! feof( fp ) )
     {
