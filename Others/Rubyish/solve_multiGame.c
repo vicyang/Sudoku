@@ -54,11 +54,11 @@ void load_games( struct game * games, char *filename  );
 int fill_one_possible_number ();
 void print_sudo_inline( Sdk sudo );
 
-int explore (Sdk, int);
+int explore (Sdk);
 void echo (Sdk);
 void play (Sdk);
 void init (void);
-int best (int);
+int best ();
 
 int Verti[9];         //列-掩码
 int Horiz[9];         //行-掩码
@@ -188,33 +188,18 @@ void play (Sdk sudo){
     Head = 0;
 
     fill(sudo);
-
-    Head = 0;
-
-    for (i = 0; i < 9; i++) {
-        for (j = 0; j < 9; j++) {
-            k = Hover[i][j];
-            if (!sudo[i][j]) {
-                Dit[Head++] = (Ijk) {j, i, k };
-            }
-        }
-    }
-
-    Tail = Head;
-    Lost = Tail + 1;
-    Head = 0;
-
-    explore (sudo, 0);
+    explore (sudo);
 } /* play */
 
-int explore (Sdk sudo, int lv) {
+int explore (Sdk sudo) {
     int res;
-    int this = best (lv);
+    if (Head == Lost) return 0;
+    int this = best ();
     if (this == ERROR) return 0;
     if (this == OK) {print_sudo_inline (sudo); return 1;}
 
     kar *maybe = &Maybe[this][OK];
-    Ijk *w     = &Dit[lv];
+    Ijk *w     = &Dit[Head - 1];
 
     int it, n;
     for (it = 1; it <= maybe[OK]; it++) {
@@ -223,23 +208,25 @@ int explore (Sdk sudo, int lv) {
         Horiz[w->h] |= n;
         Verti[w->v] |= n;
         Bloke[w->b] |= n;
-        res = explore (sudo, lv+1);
+        res = explore (sudo);
         if (res == 1) return 1;
         Horiz[w->h] ^= n;
         Verti[w->v] ^= n;
         Bloke[w->b] ^= n;
     }
     sudo[w->h][w->v] = 0;
+    Head--;
+    return 0;
 } /* explore */
 
-int best (int begin){
+int best (){
     register int min, best, posisi;
     register int head, this, maybe;
     min    = 10;
     best   = OK;
-    posisi = begin;
+    posisi = Head;
 
-    for (head = begin; head < Tail; head++) {
+    for (head = Head; head < Tail; head++) {
         Ijk *w   = &Dit[head];
         this = Verti[w->v] | Horiz[w->h] | Bloke[w->b];
         if (this == ERROR) return ERROR;
@@ -253,8 +240,8 @@ int best (int begin){
     }
 
     Ijk dat = Dit[posisi];
-    Dit[posisi] = Dit[begin];
-    Dit[begin] = dat;
+    Dit[posisi] = Dit[Head];
+    Dit[Head++] = dat;
     return best;
 } /* best */
 
