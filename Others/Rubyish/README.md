@@ -20,4 +20,7 @@ fill_one_possible_number 函数尝试优化
 * Tag v0.2
   部分变量类型改为 static 和 register
   sudoku17.txt - Time used: 4.976
-
+* Tag v0.3
+  1. explore 函数添加 int lv 表示递归层数
+  2. 将lv传入best作为Dit数组下标起点
+  sudoku17.txt - Time used: 5.054
