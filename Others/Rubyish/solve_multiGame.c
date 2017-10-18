@@ -54,7 +54,7 @@ void load_games( struct game * games, char *filename  );
 int fill_one_possible_number ();
 void print_sudo_inline( Sdk sudo );
 
-void explore (Sdk);
+int explore (Sdk);
 void echo (Sdk);
 void play (Sdk);
 void init (void);
@@ -98,16 +98,17 @@ int main (int argc, char *argv[])
 
 void fill (Sdk sudo)
 {
+    static int h, i, j, n, val, this, go;
     int I[][10] = CHERRY;
     int J[][10] = CHERRY;
     int K[][10] = CHERRY;
 
-    for (int h = Head; h < Tail; h++) {
+    for (h = Head; h < Tail; h++) {
         Ijk *w   = &Dit[h];
-        int this = Verti[w->v] | Horiz[w->h] | Bloke[w->b];
+        this = Verti[w->v] | Horiz[w->h] | Bloke[w->b];
         kar *may = Maybe[this];
-        for (int i = 1; i <= may[OK]; i++) {
-            int val = may[i];
+        for (i = 1; i <= may[OK]; i++) {
+            val = may[i];
             I[w->h][val] = I[w->h][val] == -1 ? h : -2;
             J[w->v][val] = J[w->v][val] == -1 ? h : -2;
             K[w->b][val] = K[w->b][val] == -1 ? h : -2;
@@ -116,12 +117,12 @@ void fill (Sdk sudo)
 
     Fill ijk[] = { I, J, K };
     int posi[Tail - Head];
-    int go = 0;
+    go = 0;
 
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 9; j++) {
-            for (int n = 1; n <= 9; n++) {
-                int this = ijk[i][j][n];
+    for (i = 0; i < 3; i++) {
+        for (j = 0; j < 9; j++) {
+            for (n = 1; n <= 9; n++) {
+                this = ijk[i][j][n];
                 if (this < 0) continue;
                 Ijk *x = &Dit[this];
                 if (sudo[x->h][x->v]) continue;
@@ -162,14 +163,15 @@ void init (){
 }
 
 void play (Sdk sudo){
-    for (int i = 0; i < 9; i++)
+    static int i, j, k;
+    for (i = 0; i < 9; i++)
         Horiz[i] = Verti[i] = Bloke[i] = 0;
 
     Head = 0;
 
-    for (int i = 0; i < 9; i++) {
-        for (int j = 0; j < 9; j++) {
-            int k = Hover[i][j];
+    for (i = 0; i < 9; i++) {
+        for (j = 0; j < 9; j++) {
+            k = Hover[i][j];
             if (!sudo[i][j]) {
                 Dit[Head++] = (Ijk) {j, i, k };
                 continue;
@@ -189,22 +191,25 @@ void play (Sdk sudo){
     explore (sudo);
 } /* play */
 
-void explore (Sdk sudo) {
-    if (Head == Lost) return;
+int explore (Sdk sudo) {
+    int res;
+    if (Head == Lost) return 0;
     int this = best ();
-    if (this == ERROR) return;
-    if (this == OK) print_sudo_inline (sudo);
+    if (this == ERROR) return 0;
+    if (this == OK) {print_sudo_inline (sudo); return 1;}
 
     kar *maybe = &Maybe[this][OK];
     Ijk *w     = &Dit[Head - 1];
 
-    for (int it = 1; it <= maybe[OK]; it++) {
-        int n = 1 << maybe[it];
+    int it, n;
+    for (it = 1; it <= maybe[OK]; it++) {
+        n = 1 << maybe[it];
         sudo[w->h][w->v] = maybe[it];
         Horiz[w->h] |= n;
         Verti[w->v] |= n;
         Bloke[w->b] |= n;
-        explore (sudo);
+        res = explore (sudo);
+        if (res == 1) return 1;
         Horiz[w->h] ^= n;
         Verti[w->v] ^= n;
         Bloke[w->b] ^= n;
@@ -214,15 +219,17 @@ void explore (Sdk sudo) {
 } /* explore */
 
 int best (){
-    int min    = 10;
-    int best   = OK;
-    int posisi = Head;
+    register int min, best, posisi;
+    register int head, this, maybe;
+    min    = 10;
+    best   = OK;
+    posisi = Head;
 
-    for (int head = Head; head < Tail; head++) {
+    for (head = Head; head < Tail; head++) {
         Ijk *w   = &Dit[head];
-        int this = Verti[w->v] | Horiz[w->h] | Bloke[w->b];
+        this = Verti[w->v] | Horiz[w->h] | Bloke[w->b];
         if (this == ERROR) return ERROR;
-        int maybe = Maybe[this][OK];
+        maybe = Maybe[this][OK];
 
         if (min > maybe) {
             posisi = head, best = this;
